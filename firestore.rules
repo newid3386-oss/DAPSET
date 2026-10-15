@@ -1,0 +1,139 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation for school backups
+    function isValidSchoolBackup(data) {
+      return data.keys().hasAll(['schoolId', 'createdAt', 'version', 'dataJson'])
+        && data.keys().hasOnly(['schoolId', 'schoolName', 'createdAt', 'createdBy', 'version', 'notes', 'dataJson'])
+        && data.schoolId is string && data.schoolId.size() <= 128
+        && (!('schoolName' in data) || (data.schoolName is string && data.schoolName.size() <= 256))
+        && data.createdAt is string && data.createdAt.size() <= 64
+        && (!('createdBy' in data) || (data.createdBy is string && data.createdBy.size() <= 256))
+        && data.version is string && data.version.size() <= 32
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 512))
+        && data.dataJson is string && data.dataJson.size() <= 1048576;
+    }
+
+    // Validation for school snapshots
+    function isValidSchoolSnapshot(data) {
+      return data.keys().hasAll(['schoolId', 'updatedAt', 'version', 'dataJson'])
+        && data.keys().hasOnly(['schoolId', 'schoolName', 'updatedAt', 'updatedBy', 'version', 'dataJson'])
+        && data.schoolId is string && data.schoolId.size() <= 128
+        && (!('schoolName' in data) || (data.schoolName is string && data.schoolName.size() <= 256))
+        && data.updatedAt is string && data.updatedAt.size() <= 64
+        && (!('updatedBy' in data) || (data.updatedBy is string && data.updatedBy.size() <= 256))
+        && data.version is string && data.version.size() <= 32
+        && data.dataJson is string && data.dataJson.size() <= 1048576;
+    }
+
+    // Validation for modular sub-documents (Granular multi-device sync)
+    function isValidSchoolModule(data) {
+      return data.keys().hasAll(['schoolId', 'moduleName', 'updatedAt', 'version', 'dataJson'])
+        && data.keys().hasOnly(['schoolId', 'moduleName', 'updatedAt', 'updatedBy', 'version', 'itemCount', 'dataJson'])
+        && data.schoolId is string && data.schoolId.size() <= 128
+        && data.moduleName is string && data.moduleName.size() <= 64
+        && data.updatedAt is string && data.updatedAt.size() <= 64
+        && (!('updatedBy' in data) || (data.updatedBy is string && data.updatedBy.size() <= 256))
+        && data.version is string && data.version.size() <= 32
+        && (!('itemCount' in data) || data.itemCount is number)
+        && data.dataJson is string && data.dataJson.size() <= 1048576;
+    }
+
+    // Validation for sync metadata broadcast
+    function isValidSchoolSyncMeta(data) {
+      return data.keys().hasAll(['schoolId', 'lastModule', 'updatedAt', 'deviceId'])
+        && data.keys().hasOnly(['schoolId', 'lastModule', 'lastAction', 'updatedAt', 'updatedBy', 'deviceId', 'version'])
+        && data.schoolId is string && data.schoolId.size() <= 128
+        && data.lastModule is string && data.lastModule.size() <= 64
+        && (!('lastAction' in data) || (data.lastAction is string && data.lastAction.size() <= 256))
+        && data.updatedAt is string && data.updatedAt.size() <= 64
+        && (!('updatedBy' in data) || (data.updatedBy is string && data.updatedBy.size() <= 256))
+        && data.deviceId is string && data.deviceId.size() <= 64
+        && (!('version' in data) || (data.version is string && data.version.size() <= 32));
+    }
+
+    // Validation for immutable audit logs
+    function isValidSchoolAuditLog(data) {
+      return data.keys().hasAll(['schoolId', 'id', 'timestamp', 'aksi', 'modul', 'recordId'])
+        && data.keys().hasOnly(['schoolId', 'id', 'timestamp', 'aksi', 'modul', 'recordId', 'userEmail', 'userName', 'dataJson'])
+        && data.schoolId is string && data.schoolId.size() <= 128
+        && data.id is string && data.id.size() <= 128
+        && data.timestamp is string && data.timestamp.size() <= 64
+        && data.aksi is string && data.aksi.size() <= 64
+        && data.modul is string && data.modul.size() <= 64
+        && data.recordId is string && data.recordId.size() <= 128
+        && (!('userEmail' in data) || (data.userEmail is string && data.userEmail.size() <= 256))
+        && (!('userName' in data) || (data.userName is string && data.userName.size() <= 256))
+        && (!('dataJson' in data) || (data.dataJson is string && data.dataJson.size() <= 1048576));
+    }
+
+    // School backups collection
+    match /school_backups/{backupId} {
+      allow get: if isValidId(backupId);
+      allow list: if true;
+      allow create: if isValidId(backupId) && isValidSchoolBackup(incoming());
+      allow update: if isValidId(backupId) && isValidSchoolBackup(incoming())
+        && incoming().schoolId == existing().schoolId;
+      allow delete: if isValidId(backupId);
+    }
+
+    // School snapshots collection
+    match /school_snapshots/{schoolId} {
+      allow get: if isValidId(schoolId);
+      allow list: if true;
+      allow create: if isValidId(schoolId) && isValidSchoolSnapshot(incoming());
+      allow update: if isValidId(schoolId) && isValidSchoolSnapshot(incoming())
+        && incoming().schoolId == existing().schoolId;
+      allow delete: if isValidId(schoolId);
+    }
+
+    // Granular school modules collection
+    match /school_modules/{moduleDocId} {
+      allow get: if isValidId(moduleDocId);
+      allow list: if true;
+      allow create: if isValidId(moduleDocId) && isValidSchoolModule(incoming());
+      allow update: if isValidId(moduleDocId) && isValidSchoolModule(incoming())
+        && incoming().schoolId == existing().schoolId;
+      allow delete: if isValidId(moduleDocId);
+    }
+
+    // Real-time sync signals collection
+    match /school_sync_meta/{schoolId} {
+      allow get: if isValidId(schoolId);
+      allow list: if true;
+      allow create: if isValidId(schoolId) && isValidSchoolSyncMeta(incoming());
+      allow update: if isValidId(schoolId) && isValidSchoolSyncMeta(incoming())
+        && incoming().schoolId == existing().schoolId;
+      allow delete: if isValidId(schoolId);
+    }
+
+    // Immutable audit logs collection (Append-Only ledger: updates and deletes are strictly rejected)
+    match /school_audit_logs/{logId} {
+      allow get, list: if true;
+      allow create: if isValidId(logId) && isValidSchoolAuditLog(incoming());
+      allow update, delete: if false;
+    }
+
+    // Connection test document
+    match /test/{docId} {
+      allow read, write: if isValidId(docId);
+    }
+  }
+}

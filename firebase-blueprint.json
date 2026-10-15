@@ -1,0 +1,102 @@
+{
+  "entities": {
+    "schoolBackup": {
+      "title": "School Backup Snapshot",
+      "description": "Full school inventory and asset database backup snapshot",
+      "type": "object",
+      "properties": {
+        "schoolId": { "type": "string", "maxLength": 128 },
+        "schoolName": { "type": "string", "maxLength": 256 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "createdBy": { "type": "string", "maxLength": 256 },
+        "version": { "type": "string", "maxLength": 32 },
+        "notes": { "type": "string", "maxLength": 512 },
+        "dataJson": { "type": "string", "maxLength": 1048576 }
+      },
+      "required": ["schoolId", "createdAt", "version", "dataJson"]
+    },
+    "schoolSnapshot": {
+      "title": "Live School Data",
+      "description": "Live synchronized state of school inventory",
+      "type": "object",
+      "properties": {
+        "schoolId": { "type": "string", "maxLength": 128 },
+        "schoolName": { "type": "string", "maxLength": 256 },
+        "updatedAt": { "type": "string", "maxLength": 64 },
+        "updatedBy": { "type": "string", "maxLength": 256 },
+        "version": { "type": "string", "maxLength": 32 },
+        "dataJson": { "type": "string", "maxLength": 1048576 }
+      },
+      "required": ["schoolId", "updatedAt", "version", "dataJson"]
+    },
+    "schoolModule": {
+      "title": "Granular Module Data",
+      "description": "Partitioned module document for conflict-free multi-device synchronization",
+      "type": "object",
+      "properties": {
+        "schoolId": { "type": "string", "maxLength": 128 },
+        "moduleName": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 },
+        "updatedBy": { "type": "string", "maxLength": 256 },
+        "version": { "type": "string", "maxLength": 32 },
+        "itemCount": { "type": "number" },
+        "dataJson": { "type": "string", "maxLength": 1048576 }
+      },
+      "required": ["schoolId", "moduleName", "updatedAt", "version", "dataJson"]
+    },
+    "schoolSyncMeta": {
+      "title": "School Real-Time Sync Metadata",
+      "description": "Live signal for multi-device collaboration and real-time delta updates",
+      "type": "object",
+      "properties": {
+        "schoolId": { "type": "string", "maxLength": 128 },
+        "lastModule": { "type": "string", "maxLength": 64 },
+        "lastAction": { "type": "string", "maxLength": 256 },
+        "updatedAt": { "type": "string", "maxLength": 64 },
+        "updatedBy": { "type": "string", "maxLength": 256 },
+        "deviceId": { "type": "string", "maxLength": 64 },
+        "version": { "type": "string", "maxLength": 32 }
+      },
+      "required": ["schoolId", "lastModule", "updatedAt", "deviceId"]
+    },
+    "schoolAuditLog": {
+      "title": "Immutable Cloud Audit Trail",
+      "description": "Permanent tamper-proof audit record of critical inventory actions",
+      "type": "object",
+      "properties": {
+        "schoolId": { "type": "string", "maxLength": 128 },
+        "id": { "type": "string", "maxLength": 128 },
+        "timestamp": { "type": "string", "maxLength": 64 },
+        "aksi": { "type": "string", "maxLength": 64 },
+        "modul": { "type": "string", "maxLength": 64 },
+        "recordId": { "type": "string", "maxLength": 128 },
+        "userEmail": { "type": "string", "maxLength": 256 },
+        "userName": { "type": "string", "maxLength": 256 },
+        "dataJson": { "type": "string", "maxLength": 1048576 }
+      },
+      "required": ["schoolId", "id", "timestamp", "aksi", "modul", "recordId"]
+    }
+  },
+  "firestore": {
+    "/school_backups/{backupId}": {
+      "schema": "schoolBackup",
+      "description": "Historical backup records of school inventory"
+    },
+    "/school_snapshots/{schoolId}": {
+      "schema": "schoolSnapshot",
+      "description": "Current active synchronization state for the school"
+    },
+    "/school_modules/{moduleDocId}": {
+      "schema": "schoolModule",
+      "description": "Granular module documents for multi-device real-time collaboration"
+    },
+    "/school_sync_meta/{schoolId}": {
+      "schema": "schoolSyncMeta",
+      "description": "Real-time sync broadcast signals across multiple school devices"
+    },
+    "/school_audit_logs/{logId}": {
+      "schema": "schoolAuditLog",
+      "description": "Permanent append-only audit trail collection"
+    }
+  }
+}

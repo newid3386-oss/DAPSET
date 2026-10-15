@@ -1,0 +1,8 @@
+{
+  "name": "DAPSET",
+  "description": "Sistem informasi manajemen persediaan, aset inventaris, pengadaan barang masuk, distribusi barang keluar, pengambilan ATK digital dengan TTD, stock opname, mutasi, dan laporan resmi sekolah.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
