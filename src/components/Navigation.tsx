@@ -26,12 +26,14 @@ import {
   Mail,
   Lock,
   UserCheck,
+  Users,
 } from 'lucide-react';
 import { useInventory } from '../context/InventoryContext';
 import { UserEmployee } from '../types';
 
 export type PageId =
   | 'dashboard'
+  | 'pegawai'
   | 'master'
   | 'supplier'
   | 'barang_masuk'
@@ -74,6 +76,7 @@ export interface NavItemDef {
 
 export const navItems: NavItemDef[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'pegawai', label: 'Daftar Pegawai', icon: Users },
   { id: 'master', label: 'Master Barang', icon: Boxes },
   { id: 'supplier', label: 'Penyedia / Toko', icon: Store },
   { id: 'barang_masuk', label: 'Barang Masuk', icon: ArrowDownToLine },

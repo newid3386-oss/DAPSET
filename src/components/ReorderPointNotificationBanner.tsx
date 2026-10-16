@@ -19,6 +19,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useInventory } from '../context/InventoryContext';
+import { useToast } from '../context/ToastContext';
 import { formatRupiah, exportToCsv } from '../utils/format';
 import { PageId } from './Navigation';
 import { StockSummaryItem } from '../types';
@@ -40,7 +41,8 @@ interface ReorderItemEnhanced extends StockSummaryItem {
 export const ReorderPointNotificationBanner: React.FC<ReorderPointNotificationBannerProps> = ({
   onNavigate,
 }) => {
-  const { stockSummary, items, rkbs, addRkbs, activeUser } = useInventory();
+  const { stockSummary, items, rkbs, addRkbs, addRkbsBatch, activeUser } = useInventory();
+  const { showToast } = useToast();
 
   // State tampilan
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
@@ -109,6 +111,9 @@ export const ReorderPointNotificationBanner: React.FC<ReorderPointNotificationBa
     });
   }, [reorderList, activeFilter, searchQuery]);
 
+  // Barang yang belum diajukan ke RKBS
+  const belumAdaList = useMemo(() => reorderList.filter((r) => !r.sudahAdaDiRkbs), [reorderList]);
+
   // Handler: Ajukan Satuan ke RKBS
   const handleAjukanRkbs = (item: ReorderItemEnhanced) => {
     try {
@@ -127,45 +132,46 @@ export const ReorderPointNotificationBanner: React.FC<ReorderPointNotificationBa
         diajukanOleh: activeUser?.nama || 'Sistem Alarm SIMBARAS',
       });
 
-      setActionSuccessMsg(`Berhasil! Usulan pengadaan "${item.namaBarang}" sebanyak ${item.reorderQuantity} ${item.jenisSatuan} telah ditambahkan ke RKBS.`);
-      setTimeout(() => setActionSuccessMsg(null), 3500);
+      showToast(`Berhasil! Usulan pengadaan "${item.namaBarang}" sebanyak ${item.reorderQuantity} ${item.jenisSatuan} telah ditambahkan ke RKBS.`, 'success');
     } catch (err) {
       console.error(err);
+      showToast('Gagal mengajukan usulan ke RKBS.', 'error');
     }
   };
 
   // Handler: Ajukan Semua Barang Reorder Sekaligus (Batch)
   const handleAjukanSemuaRkbs = () => {
-    const belumAda = reorderList.filter((r) => !r.sudahAdaDiRkbs);
-    if (belumAda.length === 0) {
-      setActionSuccessMsg('Semua barang yang mencapai batas minimum sudah terdaftar dalam usulan RKBS.');
-      setTimeout(() => setActionSuccessMsg(null), 3000);
+    if (belumAdaList.length === 0) {
+      showToast('Semua barang yang mencapai batas minimum sudah terdaftar dalam usulan RKBS.', 'info');
       return;
     }
 
-    belumAda.forEach((item) => {
-      addRkbs({
-        tahunAnggaran: String(new Date().getFullYear()),
-        kodeBarang: item.kodeBarang,
-        namaBarang: item.namaBarang,
-        kategori: item.kategori,
-        jumlahDiusulkan: item.reorderQuantity,
-        jenisSatuan: item.jenisSatuan,
-        hargaEstimasi: item.hargaEstimasi,
-        prioritas: item.status === 'HABIS' ? 'TINGGI' : 'SEDANG',
-        sumberDana: 'BOS Reguler',
-        status: 'DIUSULKAN',
-        alasanPengadaan: `Auto-Reorder Point: Stok sisa (${item.stok} ${item.jenisSatuan}) mencapai batas minimum (${item.batasMinimum} ${item.jenisSatuan}).`,
-        diajukanOleh: activeUser?.nama || 'Sistem Alarm SIMBARAS',
-      });
-    });
+    const itemsToSubmit = belumAdaList.map((item) => ({
+      tahunAnggaran: String(new Date().getFullYear()),
+      kodeBarang: item.kodeBarang,
+      namaBarang: item.namaBarang,
+      kategori: item.kategori,
+      jumlahDiusulkan: item.reorderQuantity,
+      jenisSatuan: item.jenisSatuan,
+      hargaEstimasi: item.hargaEstimasi,
+      prioritas: (item.status === 'HABIS' ? 'TINGGI' : 'SEDANG') as 'TINGGI' | 'SEDANG',
+      sumberDana: 'BOS Reguler',
+      status: 'DIUSULKAN' as const,
+      alasanPengadaan: `Auto-Reorder Point: Stok sisa (${item.stok} ${item.jenisSatuan}) mencapai batas minimum (${item.batasMinimum} ${item.jenisSatuan}). Diperlukan pengisian stok segera.`,
+      diajukanOleh: activeUser?.nama || 'Sistem Alarm SIMBARAS',
+    }));
 
-    setActionSuccessMsg(`Sukses! ${belumAda.length} barang reorder point berhasil diajukan serentak ke modul Perencanaan RKBS.`);
-    setTimeout(() => setActionSuccessMsg(null), 3500);
+    addRkbsBatch(itemsToSubmit);
+    showToast(`Sukses! ${itemsToSubmit.length} barang reorder point berhasil diajukan serentak ke modul Perencanaan RKBS.`, 'success');
   };
 
   // Handler: Ekspor Daftar Reorder ke CSV / Excel
   const handleExportReorderCsv = () => {
+    if (reorderList.length === 0) {
+      showToast('Tidak ada data barang reorder point untuk diekspor.', 'warning');
+      return;
+    }
+
     const exportData = reorderList.map((r) => ({
       'Kode Barang': r.kodeBarang,
       'Nama Barang': r.namaBarang,
@@ -180,6 +186,7 @@ export const ReorderPointNotificationBanner: React.FC<ReorderPointNotificationBa
       'Lokasi Penyimpanan': r.lokasiDefault,
     }));
     exportToCsv(`Daftar_Reorder_Point_Stok_Kritis_${new Date().toISOString().slice(0, 10)}`, exportData);
+    showToast(`Memo reorder point (${reorderList.length} barang) berhasil diunduh dalam format CSV/Excel!`, 'success');
   };
 
   // Jika tidak ada barang kritis
@@ -337,20 +344,38 @@ export const ReorderPointNotificationBanner: React.FC<ReorderPointNotificationBa
               <button
                 type="button"
                 onClick={handleAjukanSemuaRkbs}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition"
-                title="Ajukan semua barang kritis ke usulan RKBS sekaligus"
+                disabled={belumAdaList.length === 0}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-2xs ${
+                  belumAdaList.length === 0
+                    ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer active:scale-95'
+                }`}
+                title={
+                  belumAdaList.length === 0
+                    ? 'Semua barang reorder point sudah terdaftar di usulan RKBS'
+                    : `Ajukan ${belumAdaList.length} barang kritis ke usulan RKBS sekaligus`
+                }
               >
-                <Sparkles className="w-3.5 h-3.5 text-emerald-200" />
-                Ajukan Semua ke RKBS
+                {belumAdaList.length === 0 ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    Semua Sudah di RKBS
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-200" />
+                    Ajukan Semua ke RKBS ({belumAdaList.length})
+                  </>
+                )}
               </button>
 
               <button
                 type="button"
                 onClick={handleExportReorderCsv}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition"
-                title="Unduh daftar reorder dalam format CSV/Excel"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-semibold transition cursor-pointer shadow-2xs border border-slate-200"
+                title="Unduh daftar memo reorder point dalam format CSV/Excel"
               >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-slate-500" />
+                <FileSpreadsheet className="w-3.5 h-3.5 text-slate-600" />
                 Unduh Memo Reorder
               </button>
 

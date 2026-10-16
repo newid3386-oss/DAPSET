@@ -913,7 +913,7 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   // RKBS Actions
   const addRkbs = (item: Omit<RkbsItem, 'id' | 'timestamp' | 'totalEstimasi'>) => {
-    const id = `RKBS-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`;
+    const id = `RKBS-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}-${Math.random().toString(36).substring(2, 6)}`;
     const totalEstimasi = Number(item.jumlahDiusulkan) * Number(item.hargaEstimasi);
     const newItem: RkbsItem = {
       ...item,
@@ -930,7 +930,7 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
     const timestamp = new Date().toISOString();
     const created: RkbsItem[] = itemsList.map((item, idx) => ({
       ...item,
-      id: `RKBS-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}-${idx + 1}`,
+      id: `RKBS-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}-${idx + 1}-${Math.random().toString(36).substring(2, 5)}`,
       timestamp,
       totalEstimasi: Number(item.jumlahDiusulkan) * Number(item.hargaEstimasi),
     }));

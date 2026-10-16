@@ -1471,19 +1471,39 @@ export const TerminalLogistikPage: React.FC<TerminalLogistikPageProps> = ({ onEx
                         Pilih Kartu Guru
                       </button>
                     </div>
-                    <input
-                      type="text"
-                      list="penerima-options-standalone"
-                      value={penerima}
-                      onChange={(e) => setPenerima(e.target.value)}
-                      placeholder="Pilih atau ketik nama penerima..."
-                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 font-semibold text-white focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
-                    />
-                    <datalist id="penerima-options-standalone">
-                      {users.map((u) => (
-                        <option key={u.id} value={u.nama} />
-                      ))}
-                    </datalist>
+                    <div className="space-y-1.5">
+                      <select
+                        value={users.some((u) => u.nama === penerima) ? penerima : ''}
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            setPenerima(e.target.value);
+                            const u = users.find((x) => x.nama === e.target.value);
+                            if (u) setUnitRuangan(u.jabatan);
+                          }
+                        }}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-semibold text-white focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">-- Pilih dari Daftar Pegawai Sekolah --</option>
+                        {users.map((u) => (
+                          <option key={u.id} value={u.nama}>
+                            {u.nama} ({u.jabatan})
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        list="penerima-options-standalone"
+                        value={penerima}
+                        onChange={(e) => setPenerima(e.target.value)}
+                        placeholder="Atau ketik nama penerima..."
+                        className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 font-semibold text-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                      />
+                      <datalist id="penerima-options-standalone">
+                        {users.map((u) => (
+                          <option key={u.id} value={u.nama} />
+                        ))}
+                      </datalist>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">

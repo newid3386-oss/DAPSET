@@ -31,7 +31,7 @@ type ReportType =
   | 'bast_ai';
 
 export const LaporanPage: React.FC = () => {
-  const { config, stockSummary, barangMasuk, barangKeluar, assets, mutasi, penghapusan, pengambilanATK } = useInventory();
+  const { config, stockSummary, barangMasuk, barangKeluar, assets, mutasi, penghapusan, pengambilanATK, items } = useInventory();
   const { showToast } = useToast();
   const [selectedReport, setSelectedReport] = useState<ReportType>('persediaan');
   const [selectedRoom, setSelectedRoom] = useState<string>('ALL');
@@ -231,6 +231,75 @@ export const LaporanPage: React.FC = () => {
     }
   };
 
+  const handleCetakLaporanPdf = () => {
+    try {
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      // School Header
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text((config.schoolName || 'KABUPATEN BANDUNG BARAT').toUpperCase(), pageWidth / 2, 12, { align: 'center' });
+      doc.setFontSize(11);
+      doc.text(`RINGKASAN EKSEKUTIF INVENTARIS SEKOLAH - NPSN: ${config.npsn || '-'}`, pageWidth / 2, 18, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text(`Tanggal Cetak: ${formatTanggalIndo(new Date().toISOString())} | Bendahara: ${config.treasurer || '-'}`, pageWidth / 2, 23, { align: 'center' });
+
+      doc.setLineWidth(0.5);
+      doc.line(14, 26, pageWidth - 14, 26);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text('I. STATISTIK UTAMA INVENTARIS', 14, 34);
+
+      const summaryRows = [
+        ['Total Jenis Master Barang', `${items?.length || 0} Item`],
+        ['Total Unit Aset Tetap (KIR/KIB)', `${assets.length} Unit`],
+        ['Total Valuasi Aset Fisik', formatRupiah(assets.reduce((sum, a) => sum + Number(a.totalNilai || a.hargaSatuan * a.jumlah || 0), 0))],
+        ['Total Valuasi Persediaan Sisa', formatRupiah(stockSummary.reduce((sum, s) => sum + s.nilaiPersediaan, 0))],
+      ];
+
+      (doc as any).autoTable({
+        startY: 38,
+        head: [['Indikator Inventaris', 'Nilai / Akumulasi']],
+        body: summaryRows,
+        theme: 'grid',
+        headStyles: { fillColor: [15, 118, 110] },
+        styles: { fontSize: 10, cellPadding: 3 },
+      });
+
+      const finalY = (doc as any).lastAutoTable.finalY + 10;
+      doc.setFont('helvetica', 'bold');
+      doc.text('II. DAFTAR SALDO PERSEDIAAN UTAMA', 14, finalY);
+
+      const persediaanRows = stockSummary.slice(0, 15).map((s, idx) => [
+        idx + 1,
+        s.kodeBarang,
+        s.namaBarang,
+        s.kategori,
+        s.stok,
+        s.jenisSatuan,
+        formatRupiah(s.nilaiPersediaan),
+      ]);
+
+      (doc as any).autoTable({
+        startY: finalY + 4,
+        head: [['No', 'Kode', 'Nama Barang', 'Kategori', 'Stok', 'Satuan', 'Nilai Persediaan']],
+        body: persediaanRows,
+        theme: 'grid',
+        headStyles: { fillColor: [15, 118, 110] },
+        styles: { fontSize: 9, cellPadding: 2.5 },
+      });
+
+      doc.save(`Cetak_Laporan_Ringkasan_${config.schoolName || 'Sekolah'}_${new Date().toISOString().slice(0, 10)}.pdf`);
+      showToast('Ringkasan inventaris berhasil diunduh dalam format PDF!', 'success');
+    } catch (e) {
+      console.error(e);
+      showToast('Gagal mencetak laporan PDF', 'error');
+    }
+  };
+
   const handleGenerateAiBast = async () => {
     setAiDraftLoading(true);
     try {
@@ -275,12 +344,26 @@ export const LaporanPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={handleCetakLaporanPdf}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition cursor-pointer"
+              title="Unduh Ringkasan Inventaris dalam format PDF"
+            >
+              <Printer className="w-4 h-4 text-emerald-200" /> Cetak Laporan
+            </button>
             <button
               onClick={handleExportPdf}
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-800 hover:bg-teal-700 text-white text-xs font-bold shadow-md transition"
             >
               <Download className="w-4 h-4" /> Unduh PDF (jsPDF)
+            </button>
+            <button
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md transition cursor-pointer"
+              title="Mode Cetak Laporan (Sembunyikan navigasi & menu)"
+            >
+              <Printer className="w-4 h-4 text-emerald-400" /> Mode Cetak Laporan
             </button>
             <button
               onClick={handlePrint}

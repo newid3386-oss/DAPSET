@@ -336,6 +336,13 @@ export const AsetPage: React.FC = () => {
           </button>
           <button
             onClick={() => window.print()}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition shadow-xs cursor-pointer"
+            title="Mode Cetak Laporan (Sembunyikan navigasi & menu)"
+          >
+            <Printer className="w-3.5 h-3.5 text-emerald-400" /> Mode Cetak Laporan
+          </button>
+          <button
+            onClick={() => window.print()}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition"
           >
             <Printer className="w-3.5 h-3.5 text-slate-600" /> Cetak Lembar KIB

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Boxes,
   Building2,
@@ -48,6 +48,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const criticalItems = stockSummary.filter((s) => s.status === 'MINIMUM' || s.status === 'HABIS').slice(0, 6);
   const recentMasuk = barangMasuk.slice(0, 5);
   const recentKeluar = barangKeluar.slice(0, 5);
+
+  const totalAsetAktif = useMemo(() => {
+    return assets.filter((a) => a.status === 'AKTIF').length;
+  }, [assets]);
+
+  const jumlahBarangRusak = useMemo(() => {
+    return dashboardStats.asetRusak;
+  }, [dashboardStats]);
+
+  const totalNilaiInventaris = useMemo(() => {
+    return dashboardStats.totalNilaiAset + dashboardStats.totalNilaiPersediaan;
+  }, [dashboardStats]);
 
   return (
     <div className="space-y-6">
@@ -142,6 +154,48 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
       {/* Sistem Pengingat Jadwal Pemeliharaan Rutin & Kalender Servis Aset */}
       <MaintenanceCalendarReminderPanel onNavigateToPemeliharaan={() => onNavigate('pemeliharaan')} />
+
+      {/* Kartu Ringkasan Statistik Real-Time Inventaris Sekolah */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200/80 p-5 rounded-2xl shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold tracking-wider text-emerald-800 uppercase block mb-1">
+              Total Aset Aktif
+            </span>
+            <div className="text-2xl font-black text-emerald-950">{totalAsetAktif} Unit</div>
+            <span className="text-[11px] text-emerald-700/80 mt-1 block">Aset &amp; barang modal operasional</span>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md">
+            <Building2 className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/80 p-5 rounded-2xl shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold tracking-wider text-amber-800 uppercase block mb-1">
+              Jumlah Barang Rusak
+            </span>
+            <div className="text-2xl font-black text-amber-950">{jumlahBarangRusak} Item</div>
+            <span className="text-[11px] text-amber-700/80 mt-1 block">Perlu pemeliharaan / penghapusan</span>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-amber-600 text-white flex items-center justify-center shadow-md">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-teal-50 to-cyan-50 border border-teal-200/80 p-5 rounded-2xl shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold tracking-wider text-teal-800 uppercase block mb-1">
+              Total Nilai Inventaris Sekolah
+            </span>
+            <div className="text-xl md:text-2xl font-black text-teal-950">{formatRupiah(totalNilaiInventaris)}</div>
+            <span className="text-[11px] text-teal-700/80 mt-1 block">Akumulasi perolehan aset &amp; persediaan</span>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-teal-700 text-white flex items-center justify-center shadow-md">
+            <Coins className="w-6 h-6" />
+          </div>
+        </div>
+      </div>
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">

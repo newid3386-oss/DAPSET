@@ -3,6 +3,7 @@ import { InventoryProvider, useInventory } from './context/InventoryContext';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { Navigation, PageId, navItems } from './components/Navigation';
 import { DashboardPage } from './pages/DashboardPage';
+import { DaftarPegawaiPage } from './pages/DaftarPegawaiPage';
 import { MasterBarangPage } from './pages/MasterBarangPage';
 import { SuppliersPage } from './pages/SuppliersPage';
 import { BarangMasukPage } from './pages/BarangMasukPage';
@@ -341,6 +342,7 @@ const AppContent: React.FC = () => {
                   onOpenAiAdvisor={() => setIsAiAdvisorOpen(true)}
                 />
               )}
+              {currentPage === 'pegawai' && <DaftarPegawaiPage />}
               {currentPage === 'master' && <MasterBarangPage />}
               {currentPage === 'supplier' && <SuppliersPage />}
               {currentPage === 'barang_masuk' && (

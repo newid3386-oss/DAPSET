@@ -80,7 +80,7 @@ export const PengambilanATKPage: React.FC<PengambilanATKPageProps> = ({ onNaviga
   });
 
   // Creation Form State
-  const [selectedUserNip, setSelectedUserNip] = useState(users[0]?.nip || '');
+  const [selectedUserId, setSelectedUserId] = useState(users[0]?.id || '');
   const [tanggal, setTanggal] = useState(new Date().toISOString().slice(0, 10));
   const [selectedItems, setSelectedItems] = useState<PengambilanATKItem[]>([]);
   const [itemSearch, setItemSearch] = useState('');
@@ -97,7 +97,15 @@ export const PengambilanATKPage: React.FC<PengambilanATKPageProps> = ({ onNaviga
   const [hasKepsekSignature, setHasKepsekSignature] = useState(false);
   const [catatanKepsek, setCatatanKepsek] = useState('');
 
-  const selectedUser = users.find((u) => u.nip === selectedUserNip) || users[0];
+  const selectedUser = users.find((u) => u.id === selectedUserId) || users[0] || {
+    id: '',
+    nip: '-',
+    nama: 'Pegawai Sekolah',
+    jabatan: 'Guru / Staf',
+    email: '',
+    role: 'GURU',
+    status: 'AKTIF',
+  };
 
   const filteredList = pengambilanATK.filter((atk) => {
     const matchesSearch =
@@ -181,7 +189,7 @@ export const PengambilanATKPage: React.FC<PengambilanATKPageProps> = ({ onNaviga
   };
 
   const handleOpenAdd = () => {
-    setSelectedUserNip(users[0]?.nip || '');
+    setSelectedUserId(users[0]?.id || '');
     setTanggal(new Date().toISOString().slice(0, 10));
     setSelectedItems([]);
     setItemSearch('');
@@ -315,6 +323,13 @@ export const PengambilanATKPage: React.FC<PengambilanATKPageProps> = ({ onNaviga
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold transition shadow-xs"
           >
             <Upload className="w-3.5 h-3.5 text-slate-600" /> Impor Berita Acara
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition shadow-xs cursor-pointer"
+            title="Mode Cetak Laporan (Sembunyikan navigasi & menu)"
+          >
+            <Printer className="w-3.5 h-3.5 text-emerald-400" /> Mode Cetak Laporan
           </button>
           <button
             onClick={() => setIsExportModalOpen(true)}
@@ -615,13 +630,13 @@ export const PengambilanATKPage: React.FC<PengambilanATKPageProps> = ({ onNaviga
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Pegawai / Guru Pengambil</label>
                   <select
-                    value={selectedUserNip}
-                    onChange={(e) => setSelectedUserNip(e.target.value)}
+                    value={selectedUserId}
+                    onChange={(e) => setSelectedUserId(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 font-medium"
                   >
                     {users.map((u) => (
-                      <option key={u.id} value={u.nip}>
-                        {u.nama} ({u.jabatan})
+                      <option key={u.id} value={u.id}>
+                        {u.nama} — {u.jabatan} {u.nip ? `(NIP: ${u.nip})` : ''}
                       </option>
                     ))}
                   </select>

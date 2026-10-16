@@ -12,6 +12,7 @@ import {
   Printer,
   FileText,
   Zap,
+  User,
 } from 'lucide-react';
 import { useInventory } from '../context/InventoryContext';
 import { useToast } from '../context/ToastContext';
@@ -179,6 +180,13 @@ export const BarangKeluarPage: React.FC<BarangKeluarPageProps> = ({ onNavigate }
           )}
 
           <button
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition shadow-xs cursor-pointer"
+            title="Mode Cetak Laporan (Sembunyikan navigasi & menu)"
+          >
+            <Printer className="w-3.5 h-3.5 text-emerald-400" /> Mode Cetak Laporan
+          </button>
+          <button
             onClick={handlePrintList}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition"
           >
@@ -257,7 +265,12 @@ export const BarangKeluarPage: React.FC<BarangKeluarPageProps> = ({ onNavigate }
                         -{bk.jumlah} {bk.jenisSatuan}
                       </span>
                     </td>
-                    <td className="px-4 py-3 font-medium text-slate-800">{bk.penerima}</td>
+                    <td className="px-4 py-3 font-semibold text-slate-800">
+                      <div className="flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                        <span>{bk.penerima || 'Pegawai Sekolah'}</span>
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-slate-600">{bk.unitRuangan}</td>
                     <td className="px-4 py-3 text-slate-600 truncate max-w-[200px]" title={bk.tujuanPenggunaan}>
                       {bk.tujuanPenggunaan}
@@ -369,15 +382,42 @@ export const BarangKeluarPage: React.FC<BarangKeluarPageProps> = ({ onNavigate }
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Nama Penerima / Guru / Staf</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Nama Lengkap Guru / Staf Penerima"
-                  value={formData.penerima}
-                  onChange={(e) => setFormData({ ...formData, penerima: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500"
-                />
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-slate-700 block flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>Nama Penerima / Pegawai yang Ambil Barang</span>
+                  </label>
+                  <span className="text-[10px] text-emerald-700 font-semibold">Pilih dari Daftar Pegawai</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <select
+                    value={users.some((u) => u.nama === formData.penerima) ? formData.penerima : ''}
+                    onChange={(e) => {
+                      const sel = users.find((u) => u.nama === e.target.value);
+                      setFormData({
+                        ...formData,
+                        penerima: e.target.value,
+                        unitRuangan: sel ? sel.jabatan : formData.unitRuangan,
+                      });
+                    }}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 bg-white font-medium text-xs"
+                  >
+                    <option value="">-- Pilih dari Daftar Pegawai --</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={u.nama}>
+                        {u.nama} ({u.jabatan})
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Atau ketik nama penerima..."
+                    value={formData.penerima}
+                    onChange={(e) => setFormData({ ...formData, penerima: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 text-xs"
+                  />
+                </div>
               </div>
 
               <div>

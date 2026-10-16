@@ -46,7 +46,7 @@ Berikan analisis menyeluruh:
 Sajikan dalam bahasa Indonesia yang profesional, rapi, dengan poin-poin terstruktur dan nada positif serta solutif.`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: 'gemini-2.5-flash',
       contents: prompt,
     });
 
@@ -72,7 +72,7 @@ app.post('/api/ai/scan-receipt', async (req, res) => {
     const cleanBase64 = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: 'gemini-2.5-flash',
       contents: {
         parts: [
           {
@@ -145,7 +145,7 @@ ${JSON.stringify(payload)}
 Tuliskan format berita acara resmi lengkap dengan pembuka, rincian pasal/tabel objek barang, klausul serah terima/pertanggungjawaban, serta penutup dan kolom tanda tangan kedua belah pihak. Gunakan kaidah bahasa baku administrasi persuratan dinas pendidikan.`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: 'gemini-2.5-flash',
       contents: prompt,
     });
 

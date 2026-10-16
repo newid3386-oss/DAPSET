@@ -51,6 +51,18 @@ export interface FirestoreErrorInfo {
   };
 }
 
+export function isNetworkOrOfflineError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error);
+  return (
+    msg.includes('offline') ||
+    msg.includes('Could not reach Cloud Firestore backend') ||
+    msg.includes('timeout') ||
+    msg.includes('unavailable') ||
+    msg.includes('network') ||
+    msg.includes('Failed to fetch')
+  );
+}
+
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null): never {
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
@@ -78,8 +90,8 @@ export async function testConnection(): Promise<boolean> {
     await getDocFromServer(doc(db, 'test', 'connection'));
     return true;
   } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.warn('Firebase client is offline or network is disconnected.');
+    if (isNetworkOrOfflineError(error)) {
+      console.warn('Firebase client is offline or network/backend is unreachable.');
       return false;
     }
     return true;
@@ -141,6 +153,10 @@ export async function saveLiveSnapshot(
       dataJson,
     });
   } catch (err) {
+    if (isNetworkOrOfflineError(err)) {
+      console.warn('Offline warning during saveLiveSnapshot:', err instanceof Error ? err.message : err);
+      return;
+    }
     handleFirestoreError(err, OperationType.WRITE, path);
   }
 }
@@ -155,6 +171,10 @@ export async function loadLiveSnapshot(schoolId: string): Promise<string | null>
     const data = snap.data();
     return data?.dataJson || null;
   } catch (err) {
+    if (isNetworkOrOfflineError(err)) {
+      console.warn('Offline warning during loadLiveSnapshot:', err instanceof Error ? err.message : err);
+      return null;
+    }
     handleFirestoreError(err, OperationType.GET, path);
   }
 }
@@ -182,6 +202,10 @@ export async function createCloudBackup(
     });
     return backupId;
   } catch (err) {
+    if (isNetworkOrOfflineError(err)) {
+      console.warn('Offline warning during createCloudBackup:', err instanceof Error ? err.message : err);
+      return backupId;
+    }
     handleFirestoreError(err, OperationType.WRITE, path);
   }
 }
@@ -210,6 +234,10 @@ export async function fetchCloudBackups(schoolId: string): Promise<CloudBackupIt
     list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return list;
   } catch (err) {
+    if (isNetworkOrOfflineError(err)) {
+      console.warn('Offline warning during fetchCloudBackups:', err instanceof Error ? err.message : err);
+      return [];
+    }
     handleFirestoreError(err, OperationType.LIST, path);
   }
 }
@@ -220,6 +248,10 @@ export async function deleteCloudBackup(backupId: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'school_backups', backupId));
   } catch (err) {
+    if (isNetworkOrOfflineError(err)) {
+      console.warn('Offline warning during deleteCloudBackup:', err instanceof Error ? err.message : err);
+      return;
+    }
     handleFirestoreError(err, OperationType.DELETE, path);
   }
 }
@@ -283,6 +315,10 @@ export async function saveModuleToCloud(
       version: '3.0.0-PRO',
     });
   } catch (err) {
+    if (isNetworkOrOfflineError(err)) {
+      console.warn('Offline warning during saveModuleToCloud:', err instanceof Error ? err.message : err);
+      return;
+    }
     handleFirestoreError(err, OperationType.WRITE, path);
   }
 }
@@ -304,6 +340,10 @@ export async function loadModuleFromCloud<T = any>(
     if (!d?.dataJson) return null;
     return JSON.parse(d.dataJson) as T;
   } catch (err) {
+    if (isNetworkOrOfflineError(err)) {
+      console.warn('Offline warning during loadModuleFromCloud:', err instanceof Error ? err.message : err);
+      return null;
+    }
     handleFirestoreError(err, OperationType.GET, path);
   }
 }
